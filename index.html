@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flashcards - Gestion des Risques</title>
+    <!-- Chargement de Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chargement de la police Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- AJOUT DE MATHJAX (pour rendre les formules LaTeX) -->
+    <script>
+    MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        processEscapes: true
+      },
+      svg: {
+        fontCache: 'global'
+      }
+    };
+    </script>
+    <script type="text/javascript" id="MathJax-script" async
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js">
+    </script>
+    <!-- FIN DE L'AJOUT -->
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .flashcard-container {
+            perspective: 1000px;
+        }
+        .flashcard {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s;
+            cursor: pointer;
+        }
+        .flashcard.is-flipped {
+            transform: rotateY(180deg);
+        }
+        .flashcard-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            /* Ajout pour gérer le débordement */
+            overflow-y: auto;
+        }
+        .flashcard-front {
+            background-color: white;
+            color: #111827;
+        }
+        .flashcard-back {
+            background-color: #f3f4f6;
+            color: #1f2937;
+            transform: rotateY(180deg);
+            border: 1px solid #d1d5db;
+        }
+        
+        /* Style pour les boutons de difficulté */
+        .difficulty-btn {
+            flex-grow: 1;
+            padding: 0.75rem 0.5rem;
+            font-size: 0.75rem; /* text-xs */
+            font-weight: 500; /* medium */
+            border-radius: 0.5rem; /* rounded-lg */
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+        .difficulty-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-4">
+
+    <!-- ===== Conteneur de Connexion ===== -->
+    <div id="login-container" class="w-full max-w-md mx-auto text-center p-6 bg-white rounded-lg shadow-xl">
+        
+        <!-- Image adaptée pour la Gestion des Risques -->
+        <img src="https://static1.purebreak.com/articles/9/20/01/89/@/727382-thekairi78-au-coeur-d-une-nouvelle-polem-opengraph_1200-1.jpg" 
+             alt="TheKairi78" 
+             class="w-full h-auto max-w-xs mx-auto rounded-lg mb-6 shadow-xl object-cover" 
+             onerror="this.src='https://placehold.co/320x426/333/fff?text=Image'; this.onerror=null;">
+        
+        <!-- Le 'whitespace-pre-line' respecte vos sauts de ligne -->
+        <p class="text-gray-700 text-sm mb-4 whitespace-pre-line">
+📈 Salut à toi, jeune opérateur perdu !
+Te voilà face au grand portail de la volatilité.
+        </p> <!-- Fin du paragraphe -->
+        
+        <!-- Éléments de formulaire replacés À L'INTÉRIEUR du conteneur -->
+        <div class="mt-6">
+            <input type="password" id="password-input" placeholder="Mot de passe..." class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        
+        <button id="login-button" class="w-full bg-blue-600 text-white py-2 px-6 rounded-lg shadow-md hover:bg-blue-700 transition-colors mt-4 font-semibold">
+            Entrer
+        </button>
+
+        <p id="error-message" class="text-red-500 text-sm mt-3 hidden">Mot de passe incorrect. Essaie encore, soldat.</p>
+
+    </div> <!-- Balise de fermeture correcte pour login-container -->
+
+
+    <!-- ===== Conteneur des Flashcards (caché par défaut) ===== -->
+    <div id="app-container" class="w-full max-w-md mx-auto hidden">
+        <!-- Titre -->
+        <header class="text-center mb-6">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-800">Flashcards - Gestion des Risques</h1>
+            <p class="text-lg text-blue-600 font-medium mt-1">Chapitres 0, 1 & 11</p>
+        </header>
+
+        <!-- Conteneur de la carte (pour la perspective) -->
+        <div class="flashcard-container w-full h-80 md:h-96">
+            <!-- La carte qui va tourner -->
+            <div id="flashcard" class="flashcard">
+                <!-- Face Recto (Question) -->
+                <div id="flashcard-front" class="flashcard-face flashcard-front">
+                    <!-- Le contenu sera inséré par JavaScript -->
+                </div>
+                <!-- Face Verso (Réponse) -->
+                <div id="flashcard-back" class="flashcard-face flashcard-back">
+                    <!-- Le contenu sera inséré par JavaScript -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Indicateur (supprimé, car l'ordre est aléatoire) -->
+        <div class="text-center mt-4 h-5">
+             <!-- Espace réservé pour la hauteur -->
+        </div>
+
+        <!-- Contrôles de difficulté (cachés par défaut) -->
+        <div id="difficulty-controls" class="hidden w-full mt-4">
+            <p class="text-center text-sm text-gray-600 mb-3">Comment avez-vous trouvé cette question ?</p>
+            <div class="flex justify-between items-center w-full gap-2">
+                <button id="btn-very-easy" data-weight="1" class="difficulty-btn bg-green-100 text-green-800 border-green-200 hover:bg-green-200">Très facile</button>
+                <button id="btn-easy" data-weight="3" class="difficulty-btn bg-lime-100 text-lime-800 border-lime-200 hover:bg-lime-200">Facile</button>
+                <button id="btn-medium" data-weight="5" class="difficulty-btn bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200">Moyen</button>
+                <button id="btn-hard" data-weight="8" class="difficulty-btn bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-200">Dur</button>
+                <button id="btn-very-hard" data-weight="10" class="difficulty-btn bg-red-100 text-red-800 border-red-200 hover:bg-red-200">Très dur</button>
+            </div>
+        </div>
+         
+         <p id="helper-text" class="text-center text-gray-500 text-xs mt-6">
+            Cliquez sur la carte pour voir la réponse.
+         </p>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // --- Références DOM pour la Connexion ---
+            const loginContainer = document.getElementById('login-container');
+            const appContainer = document.getElementById('app-container');
+            const passwordInput = document.getElementById('password-input');
+            const loginButton = document.getElementById('login-button');
+            const errorMessage = document.getElementById('error-message');
+            
+            // --- 1. Données (Extraites de vos PDF) ---
+            const flashcards = [
+                // --- CHAPITRE 0 : INTRODUCTION ---
+                {
+                    question: "Quels sont les deux grands types de risques pour une entreprise ?",
+                    answer: "1. <b>Risques opérationnels</b>: découlent directement de l'activité.<br>2. <b>Risques financiers</b>: liés à la volatilité des composantes financières (taux de change, taux d'intérêt, crédit, matières premières, actions...)."
+                },
+                {
+                    question: "Pourquoi les sociétés gèrent-elles leurs risques ?",
+                    answer: "Pour limiter les difficultés financières (surcoûts), préserver la capacité d'investissement, diminuer la charge fiscale, et limiter les risques des partenaires (actionnaires, dirigeants...)."
+                },
+                {
+                    question: "Définition: Value-at-Risk (VaR)",
+                    answer: "Estimation de la <b>perte potentielle maximale</b> (en euros) d'un portefeuille, soumise à des risques de marché, sur une <b>durée T</b> et avec un <b>seuil de probabilité α</b>."
+                },
+                {
+                    question: "Quels sont les avantages de la VaR ?",
+                    answer: "C'est une mesure statistique simple (un chiffre en euros), elle mesure le risque total d'un portefeuille et peut être complétée par une analyse de sensibilité."
+                },
+                {
+                    question: "Définition: Couverture (Hedging)",
+                    answer: "Ensemble des stratégies financières permettant de <b>modifier</b> et/ou de <b>réduire</b> l'exposition à un risque déterminé."
+                },
+                {
+                    question: "Définition: Produit Dérivé",
+                    answer: "Un instrument financier dont la <b>valeur dépend (dérive)</b> de celle d'un autre élément appelé le <b>sous-jacent</b>."
+                },
+                {
+                    question: "Quelles sont les 3 catégories de produits dérivés étudiées ?",
+                    answer: "1. <b>Forwards / Futures</b> (opérations à terme)<br>2. <b>Swaps</b> (échange de positions/flux)<br>3. <b>Options</b> (droit d'acheter ou de vendre)"
+                },
+                {
+                    question: "Différence principale: Forwards vs Futures",
+                    answer: "<b>Forwards</b>: Gré à gré (OTC), sur mesure, difficiles à revendre, pas de 'marking to market'.<br><b>Futures</b>: Marché organisé, standardisé, 'marking to market' quotidien, chambre de compensation."
+                },
+                {
+                    question: "Qu'est-ce qu'une Chambre de Compensation (Clearinghouse) ?",
+                    answer: "Un intermédiaire (ex: LCH-Clearnet) qui s'interpose entre acheteur et vendeur de futures/options, garantissant la bonne fin des opérations et gérant les appels de marge."
+                },
+                {
+                    question: "Qu'est-ce qu'un 'reverse trade' ?",
+                    answer: "Une opération inverse (acheter si on a vendu, vendre si on a acheté) permettant de compenser (clôturer) une position sur un contrat Future avant son échéance. (97% des cas)"
+                },
+                {
+                    question: "Définition: Swap",
+                    answer: "Accord entre deux parties pour <b>échanger une série de cash flows futurs</b>. (Ex: IRS - Taux d'intérêt, CRS - Devises). C'est le premier marché hors-bourse (OTC)."
+                },
+                {
+                    question: "Définition: Option CALL",
+                    answer: "Donne à son détenteur le <b>DROIT</b> (et non l'obligation) d'<b>ACHETER</b> un sous-jacent à un prix fixé (prix d'exercice ou 'strike') jusqu'à une date donnée."
+                },
+                {
+                    question: "Définition: Option PUT",
+                    answer: "Donne à son détenteur le <b>DROIT</b> (et non l'obligation) de <b>VENDRE</b> un sous-jacent à un prix fixé (prix d'exercice ou 'strike') jusqu'à une date donnée."
+                },
+                {
+                    question: "Différence: Option Européenne vs Américaine",
+                    answer: "<b>Européenne</b>: Le droit ne peut être exercé qu'<b>à l'échéance</b>.<br><b>Américaine</b>: Le droit peut être exercé <b>à tout moment</b> jusqu'à l'échéance."
+                },
+                {
+                    question: "Qui sont les 3 types d'acteurs sur le marché des dérivés ?",
+                    answer: "1. <b>Hedgers</b> (Couverture)<br>2. <b>Arbitragistes</b> (Profit sans risque par incohérence de prix)<br>3. <b>Spéculateurs</b> (Prise de risque pour profit)"
+                },
+                {
+                    question: "Qu'est-ce qu'un Market Maker (MM) / Teneur de marché ?",
+                    answer: "Un acteur qui affiche en continu une <b>fourchette de prix (Achat/Vente)</b> et se porte contrepartie, assurant ainsi la <b>liquidité</b> du marché."
+                },
+                {
+                    question: "Comment une banque non-MM achète-t-elle un actif au MM ?",
+                    answer: "Elle achète l'actif au <b>prix de vente (le plus cher)</b> affiché par le Market Maker."
+                },
+                {
+                    question: "Comment une banque non-MM vend-elle un actif au MM ?",
+                    answer: "Elle vend l'actif au <b>prix d'achat (le moins cher)</b> affiché par le Market Maker."
+                },
+                
+                // --- CHAPITRE 1 : FORWARDS & CHANGE ---
+                {
+                    question: "Définition: Contrat Forward",
+                    answer: "Contrat à terme <b>non standardisé (OTC)</b> portant sur l'achat (position longue) ou la vente (position courte) d'un actif à un <b>prix prédéfini (K)</b> et une <b>date future (T)</b>."
+                },
+                {
+                    question: "Quel est le payoff d'une position LONGUE sur un Forward ?",
+                    answer: "Payoff = $S_T - K$<br><b>Gain</b> si $S_T > K$ (le prix du marché est > au prix fixé)<br><b>Perte</b> si $S_T < K$"
+                },
+                {
+                    question: "Quel est le payoff d'une position COURTE sur un Forward ?",
+                    answer: "Payoff = $K - S_T$<br><b>Gain</b> si $S_T < K$ (le prix du marché est < au prix fixé)<br><b>Perte</b> si $S_T > K$"
+                },
+                {
+                    question: "Que signifie 'Absence d'Opportunité d'Arbitrage' (AOA) ?",
+                    answer: "Principe de valorisation selon lequel le prix d'un produit dérivé (ex: Forward) est fixé de telle sorte qu'il est <b>impossible</b> de réaliser un profit certain sans risque."
+                },
+                {
+                    question: "Formule: Prix d'un Forward (Pf) sur un actif sans revenu (S0) ?",
+                    answer: "Basé sur l'AOA : $Pf = S_0 \times \exp(r \times T)$<br>(Prix spot capitalisé au taux sans risque $r$ sur la durée $T$)"
+                },
+                {
+                    question: "Formule: Prix d'un Forward (Pf) sur un actif avec frais de stockage (Cs) ?",
+                    answer: "$Pf = (S_0 + C_s) \times \exp(r \times T)$<br>(On ajoute la valeur actualisée des coûts de stockage au prix spot)"
+                },
+                {
+                    question: "Formule: Prix d'un Forward (Pf) sur un actif avec revenu (dividende D) ?",
+                    answer: "$Pf = (S_0 - VA(D)) \times \exp(r \times T)$<br>(On soustrait la valeur actualisée $VA(D)$ du dividende au prix spot)"
+                },
+                {
+                    question: "Qu'est-ce qu'un 'Forward Forward' (Terme contre Terme) ?",
+                    answer: "Une offre de <b>financement garanti</b> (montant et taux) à une date future. Il couvre à la fois le <b>risque de taux ET de liquidité</b>."
+                },
+                {
+                    question: "Quelles sont les 3 opérations de la banque pour un 'Forward Forward' (prêt en 3 mois pour 6 mois) ?",
+                    answer: "1. <b>Emprunt</b> sur la durée totale (9 mois).<br>2. <b>Placement</b> (prêt n°1) pendant la période d'attente (3 mois).<br>3. <b>Prêt n°2</b> au client (6 mois) avec les fonds du prêt n°1."
+                },
+                {
+                    question: "Quel est l'inconvénient du 'Forward Forward' ?",
+                    answer: "Il est <b>coûteux</b> car il couvre deux risques (taux + liquidité) et implique des montages complexes (coût bilanciel élevé pour la banque)."
+                },
+                {
+                    question: "Définition: Forward Rate Agreement (FRA)",
+                    answer: "Un engagement sur un <b>taux garanti</b> pour un emprunt ou placement futur (entre T1 et T2). Il ne couvre <b>que le risque de taux</b> (pas de liquidité)."
+                },
+                {
+                    question: "Qu'est-ce qu'un 'Call FRA' ?",
+                    answer: "Une 'option' (garantie) de <b>taux emprunteur</b>. L'acheteur se garantit contre une <b>hausse</b> des taux."
+                },
+                {
+                    question: "Qu'est-ce qu'un 'Put FRA' ?",
+                    answer: "Une 'option' (garantie) de <b>taux prêteur</b>. L'acheteur se garantit contre une <b>baisse</b> des taux."
+                },
+                {
+                    question: "Comment est réglé un FRA ?",
+                    answer: "Par le paiement d'un <b>différentiel d'intérêt</b> (valeur actualisée) entre le taux garanti (Tg) et le taux de référence du marché (Tr), appliqué à un notionnel C. Il n'y a <b>pas d'échange de capital</b>."
+                },
+                {
+                    question: "Formule (simplifiée) du règlement d'un FRA ?",
+                    answer: "$V = \frac{C \times (T_r - T_g) \times \text{Nbre jours}/360}{1 + T_r \times \text{Nbre jours}/360}$<br>(Si Tr > Tg, le vendeur paie l'acheteur)"
+                },
+                {
+                    question: "Qu'est-ce qu'un 'change à terme sec' ?",
+                    answer: "Une opération d'achat ou de vente à terme d'une devise contre une autre, pour couvrir un <b>risque de change certain</b> (ex: facture future)."
+                },
+                {
+                    question: "Un exportateur européen attend un paiement en USD dans 6 mois. Quel est son risque ?",
+                    answer: "Une <b>baisse</b> du cours USD/EUR (une dépréciation du dollar), ce qui réduirait son revenu en EUR."
+                },
+                {
+                    question: "Un importateur européen doit payer en USD dans 3 mois. Quel est son risque ?",
+                    answer: "Une <b>hausse</b> du cours USD/EUR (une appréciation du dollar), ce qui augmenterait son coût en EUR."
+                },
+                {
+                    question: "Comment un exportateur (attendant des USD) se couvre-t-il ?",
+                    answer: "Il <b>VEND à terme</b> les USD aujourd'hui pour fixer son cours de change futur."
+                },
+                {
+                    question: "Comment un importateur (devant payer des USD) se couvre-t-il ?",
+                    answer: "Il <b>ACHÈTE à terme</b> les USD aujourd'hui pour fixer son cours de change futur."
+                },
+                {
+                    question: "Quelles sont les 3 opérations (théoriques) de la banque pour un 'change à terme' (ex: achat à terme d'USD) ?",
+                    answer: "1. <b>Emprunt</b> de la devise vendue à terme (ici, EUR).<br>2. <b>Opération de change</b> au comptant (EUR -> USD).<br>3. <b>Prêt (placement)</b> de la devise achetée à terme (ici, USD)."
+                },
+                {
+                    question: "Formule: Taux de Change à Terme (CT) (AOA)",
+                    answer: "$CT_{A/B} = CC_{A/B} \times \frac{1 + Tx_B \times (N/Base)}{1 + Tx_A \times (N/Base)}$<br>(CC = Cours Comptant, Tx = Taux d'intérêt)"
+                },
+                {
+                    question: "Définition: Report (Marché des changes)",
+                    answer: "Une devise est en <b>Report</b> si son cours à terme (CT) est <b>PLUS CHER</b> que son cours au comptant (CC).<br>(CT > CC)"
+                },
+                {
+                    question: "Définition: Déport (Marché des changes)",
+                    answer: "Une devise est en <b>Déport</b> si son cours à terme (CT) est <b>MOINS CHER</b> que son cours au comptant (CC).<br>(CT < CC)"
+                },
+                {
+                    question: "Quand une devise est-elle en REPORT ?",
+                    answer: "Quand son taux d'intérêt est <b>INFÉRIEUR</b> à celui de l'autre devise.<br>(Ex: Si $Tx_{USD} < Tx_{EUR}$, alors l'USD est en Report vs EUR)"
+                },
+                {
+                    question: "Quand une devise est-elle en DÉPORT ?",
+                    answer: "Quand son taux d'intérêt est <b>SUPÉRIEUR</b> à celui de l'autre devise.<br>(Ex: Si $Tx_{USD} > Tx_{EUR}$, alors l'USD est en Déport vs EUR)"
+                },
+                {
+                    question: "Qui bénéficie du REPORT d'une devise (ex: USD en report) ?",
+                    answer: "L'<b>EXPORTATEUR</b> (qui vend des USD à terme). Il vendra ses USD plus cher à terme qu'au comptant."
+                },
+                {
+                    question: "Qui bénéficie du DÉPORT d'une devise (ex: USD en déport) ?",
+                    answer: "L'<b>IMPORTATEUR</b> (qui achète des USD à terme). Il achètera ses USD moins cher à terme qu'au comptant."
+                },
+                {
+                    question: "Que sont les 'Points de Swap' (ou points de terme) ?",
+                    answer: "C'est la différence entre le cours à terme et le cours au comptant (CT - CC). C'est le Report (si > 0) ou le Déport (si < 0)."
+                },
+                {
+                    question: "Qu'est-ce qu'un 'pip' (Percentage In Points) ?",
+                    answer: "La plus petite unité de mesure pour un mouvement de marché sur le Forex (souvent la 4ème décimale). Ex: 1,234<b>5</b>"
+                },
+                {
+                    question: "Formule: Côté 'BID' (Achat) d'une fourchette de change à terme $CT_{A/B}$",
+                    answer: "$CT_{A/B}^{Bid} = CC_{A/B}^{Bid} \times \frac{1 + Tx_B^{Bid} \times (N/Base)}{1 + Tx_A^{Ask} \times (N/Base)}$<br>(On utilise les pires taux pour la banque: Prêt au + bas, Emprunt au + haut)"
+                },
+                {
+                    question: "Formule: Côté 'ASK' (Vente) d'une fourchette de change à terme $CT_{A/B}$",
+                    answer: "$CT_{A/B}^{Ask} = CC_{A/B}^{Ask} \times \frac{1 + Tx_B^{Ask} \times (N/Base)}{1 + Tx_A^{Bid} \times (N/Base)}$<br>(On utilise les pires taux pour la banque: Prêt au + bas, Emprunt au + haut)"
+                },
+                {
+                    question: "Comment calcule-t-on un cours croisé à terme (ex: $CT_{A/C}$) ?",
+                    answer: "$CT_{A/C} = CT_{A/B} \times CT_{B/C}$<br>(On multiplie les cours à terme, pas les cours au comptant)"
+                },
+                {
+                    question: "Définition: Swap Cambiste",
+                    answer: "Une opération simultanée d'<b>emprunt et de prêt</b> de devises. Combine une opération <b>SPOT</b> et une opération de <b>TERME inverse</b>."
+                },
+                {
+                    question: "Quelle est l'utilité d'un Swap Cambiste ?",
+                    answer: "C'est un prêt garanti par le dépôt d'une autre monnaie. Permet de gérer la trésorerie à court terme dans différentes devises."
+                },
+
+                // --- CHAPITRE 11 : MARCHÉ DES CHANGES ---
+                {
+                    question: "Définition: Marché des changes (FOREX)",
+                    answer: "Marché <b>interbancaire</b> (OTC) où les opérateurs (cambistes) assurent la cotation et les échanges de devises. C'est un marché électronique, décentralisé et continu (24h/24)."
+                },
+                {
+                    question: "Quel est le délai de règlement standard sur le marché spot (au comptant) ?",
+                    answer: "<b>48 heures (J+2)</b> après la date de l'opération."
+                },
+                {
+                    question: "Qu'est-ce qu'une 'position de change' ?",
+                    answer: "Le solde des avoirs et engagements dans une devise étrangère.<br><b>Position longue</b>: Solde positif (on détient la devise).<br><b>Position courte</b>: Solde négatif (on doit la devise)."
+                },
+                {
+                    question: "Quelle est la part des opérations 'réelles' (commerce) sur le FOREX ?",
+                    answer: "Seulement <b>3%</b>. Les 97% restants sont des transactions financières (couverture, spéculation, arbitrage) entre les banques."
+                },
+                {
+                    question: "Qu'est-ce que le 'Spread' (ou fourchette) ?",
+                    answer: "La différence entre le prix de vente (Ask/Vendeur) et le prix d'achat (Bid/Acheteur) d'une devise. C'est la rémunération du Market Maker."
+                },
+                {
+                    question: "Dans la cotation EUR/USD = 1.05, quelle est la 'Base Currency' (devise de base) ?",
+                    answer: "L'<b>EUR</b> (la première devise). Elle vaut 1 unité (1 EUR = 1.05 USD)."
+                },
+                {
+                    question: "Dans la cotation EUR/USD = 1.05, quelle est la 'Quote Currency' (devise de contrepartie) ?",
+                    answer: "L'<b>USD</b> (la seconde devise). C'est la devise dans laquelle le prix est exprimé."
+                },
+                {
+                    question: "Si EUR/USD passe de 1.05 à 1.10, l'Euro s'est-il apprécié ou déprécié ?",
+                    answer: "L'Euro s'est <b>apprécié</b>. Il faut plus de USD (1.10 au lieu de 1.05) pour acheter 1 EUR."
+                },
+                {
+                    question: "Si USD/EUR passe de 0.95 à 0.90, l'Euro s'est-il apprécié ou déprécié ?",
+                    answer: "L'Euro s'est <b>apprécié</b>. Il faut moins d'EUR (0.90 au lieu de 0.95) pour acheter 1 USD."
+                },
+                {
+                    question: "Qu'est-ce que la cotation 'au certain' (pour un européen) ?",
+                    answer: "Le prix de la devise <b>étrangère</b> en monnaie <b>nationale</b>.<br>Ex: <b>USD/EUR = 0.95</b> (1 USD vaut 0.95 EUR)."
+                },
+                {
+                    question: "Qu'est-ce que la cotation 'à l'incertain' (pour un européen) ?",
+                    answer: "Le prix de la monnaie <b>nationale</b> en devise <b>étrangère</b>.<br>Ex: <b>EUR/USD = 1.05</b> (1 EUR vaut 1.05 USD)."
+                },
+                {
+                    question: "Quelle est la relation entre le cours au comptant (Cc) et le cours à terme (Ct) selon la théorie keynésienne (AOA) ?",
+                    answer: "Le cours à terme est le cours au comptant ajusté par le différentiel de taux d'intérêt.<br>$Ct = Cc \times \frac{(1 + tx_{USD} \times N_j/Base)}{(1 + tx_{EUR} \times N_j/Base)}$ (pour une cotation USD/EUR)"
+                },
+
+                // --- EXERCICES CHAPITRE 1 ---
+                {
+                    question: "(Exercice) Une entreprise veut emprunter 450 000 € dans 3 mois pour 9 mois. Quel instrument couvre le risque de taux ET de liquidité ?",
+                    answer: "Le <b>Forward-Forward</b> (ou Terme contre Terme)."
+                },
+                {
+                    question: "(Exercice) Une banque vend un FRA 3 contre 3. Qu'anticipe-t-elle ?",
+                    answer: "Elle anticipe une <b>baisse des taux</b>. (Elle vend une garantie de taux à 5% et espère que le marché sera à 4%, empochant la différence)."
+                },
+                {
+                    question: "(Exercice) Un exportateur va recevoir 1M USD dans 6 mois. Doit-il acheter ou vendre à terme ?",
+                    answer: "Il doit <b>VENDRE</b> 1M USD à terme pour figer son revenu en EUR."
+                },
+                {
+                    question: "(Exercice) Un importateur doit payer 1.45M USD dans 6 mois. Doit-il acheter ou vendre à terme ?",
+                    answer: "Il doit <b>ACHETER</b> 1.45M USD à terme pour figer son coût en EUR."
+                },
+                {
+                    question: "(Exercice) Taux EUR = 3.2%. Taux USD = 1.7%. L'USD est-il en Report ou en Déport par rapport à l'EUR ?",
+                    answer: "L'USD est en <b>REPORT</b>.<br>Son taux (1.7%) est <b>inférieur</b> à celui de l'EUR (3.2%). Son cours à terme sera donc plus cher."
+                },
+                {
+                    question: "(Exercice) Taux EUR = 0.18%. Taux USD = 0.36%. L'USD est-il en Report ou en Déport par rapport à l'EUR ?",
+                    answer: "L'USD est en <b>DÉPORT</b>.<br>Son taux (0.36%) est <b>supérieur</b> à celui de l'EUR (0.18%). Son cours à terme sera donc moins cher."
+                },
+                {
+                    question: "(Exercice) Un exportateur (recevant des USD) a-t-il raison de se couvrir si l'USD est en REPORT ?",
+                    answer: "<b>Oui</b>, c'est doublement avantageux. Il élimine son risque de baisse ET il vend ses USD à un cours (terme) plus élevé que le cours (comptant)."
+                },
+                {
+                    question: "(Exercice) Un exportateur (recevant des USD) a-t-il raison de se couvrir si l'USD est en DÉPORT ?",
+                    answer: "<b>C'est un arbitrage</b>: il élimine son risque de baisse, mais il accepte de vendre ses USD à un cours (terme) moins élevé que le cours (comptant). C'est le <b>coût de la couverture</b>."
+                },
+                {
+                    question: "(Exercice) Taux EUR (Ask) = 4.70%. Taux USD (Bid) = 5.25%. Cours EUR/USD (Bid) = 1.3500. Calculez $CT^{Bid}$ (achat EUR/vente USD) à 92 jours (Base 360).",
+                    answer: "$CT^{Bid} = 1.3500 \times \frac{1 + 5.25\% \times (92/360)}{1 + 4.70\% \times (92/360)} = 1.3519$<br>(Devise A=EUR, Devise B=USD)"
+                }
+            ];
+
+            // --- 2. État de l'application ---
+            let deck = [];
+            let currentCardIndex = 0;
+            let isFlipped = false;
+
+            // --- 3. Références DOM pour l'App ---
+            const flashcard = document.getElementById('flashcard');
+            const flashcardFront = document.getElementById('flashcard-front');
+            const flashcardBack = document.getElementById('flashcard-back');
+            const difficultyControls = document.getElementById('difficulty-controls');
+            const difficultyButtons = document.querySelectorAll('.difficulty-btn');
+            const helperText = document.getElementById('helper-text');
+
+            // --- 4. Fonctions de l'App ---
+
+            /**
+             * Initialise le "deck" de cartes avec un poids par défaut.
+             */
+            function initializeApp() {
+                // Crée le deck de révision. Chaque carte a un poids initial de 5 (Moyen).
+                deck = flashcards.map((card, index) => ({
+                    ...card,
+                    originalIndex: index,
+                    weight: 5 // Poids initial, 5 = Moyen
+                }));
+                showNextCard();
+            }
+            
+            /**
+             * Sélectionne la prochaine carte en utilisant un tirage pondéré.
+             */
+            function showNextCard() {
+                // 1. Calculer le poids total du deck
+                let totalWeight = deck.reduce((acc, card) => acc + card.weight, 0);
+                
+                // 2. Générer un nombre aléatoire entre 0 et le poids total
+                let randomWeight = Math.random() * totalWeight;
+                
+                // 3. Trouver la carte correspondant à ce poids
+                let selectedIndex = -1;
+                for (let i = 0; i < deck.length; i++) {
+                    randomWeight -= deck[i].weight;
+                    if (randomWeight <= 0) {
+                        selectedIndex = i;
+                        break;
+                    }
+                }
+                
+                if (selectedIndex === -1) {
+                    // Sécurité au cas où (ne devrait pas arriver)
+                    selectedIndex = Math.floor(Math.random() * deck.length);
+                }
+                
+                currentCardIndex = selectedIndex;
+                updateFlashcard(currentCardIndex);
+            }
+
+            /**
+             * Met à jour le contenu de la carte et réinitialise son état.
+             */
+            function updateFlashcard(index) {
+                const card = deck[index];
+                flashcardFront.innerHTML = `<span class="text-xl md:text-2xl font-semibold">${card.question}</span>`;
+                flashcardBack.innerHTML = `<span class="text-base md:text-lg">${card.answer}</span>`;
+                
+                // --- AJOUT ---
+                // Demander à MathJax de re-composer les maths sur les deux faces
+                if (window.MathJax) {
+                    MathJax.typesetPromise([flashcardFront, flashcardBack]).catch((err) => console.log('Erreur MathJax: ', err));
+                }
+                // --- FIN AJOUT ---
+
+                // Réinitialiser la carte (la mettre côté question)
+                if (isFlipped) {
+                    flipCard(); // Retourne la carte si elle était sur la réponse
+                } else {
+                    // S'assurer que les contrôles sont cachés si la carte n'était pas retournée
+                    difficultyControls.classList.add('hidden');
+                    helperText.classList.remove('hidden');
+                }
+            }
+
+            /**
+             * Gère le clic sur un bouton de difficulté.
+             */
+            function handleDifficultyClick(event) {
+                // 1. Récupérer le nouveau poids depuis l'attribut data-weight
+                const newWeight = parseInt(event.currentTarget.dataset.weight, 10);
+                
+                // 2. Mettre à jour le poids de la carte actuelle dans le deck
+                deck[currentCardIndex].weight = newWeight;
+                
+                // 3. Afficher la prochaine carte (sélection pondérée)
+                showNextCard();
+            }
+
+            /**
+             * Retourne la carte (animation) et affiche/cache les contrôles.
+             */
+            function flipCard() {
+                isFlipped = !isFlipped;
+                flashcard.classList.toggle('is-flipped');
+                
+                if (isFlipped) {
+                    // La carte est sur la face "Réponse"
+                    difficultyControls.classList.remove('hidden');
+                    helperText.classList.add('hidden');
+                } else {
+                    // La carte est sur la face "Question"
+                    difficultyControls.classList.add('hidden');
+                    helperText.classList.remove('hidden');
+                }
+            }
+
+            // --- 5. Écouteurs d'événements ---
+
+            // Écouteur pour le bouton de connexion
+            loginButton.addEventListener('click', () => {
+                if (passwordInput.value === 'stage') {
+                    // Mot de passe correct
+                    loginContainer.classList.add('hidden');
+                    appContainer.classList.remove('hidden');
+                    errorMessage.classList.add('hidden');
+                    
+                    // --- 6. Initialisation de l'app ---
+                    initializeApp(); // Démarrer l'application SEULEMENT MAINTENANT
+
+                } else {
+                    // Mot de passe incorrect
+                    errorMessage.classList.remove('hidden');
+                    passwordInput.value = ''; // Vider le champ
+                    passwordInput.focus(); // Remettre le focus
+                }
+            });
+
+            // Permettre de valider avec "Entrée"
+            passwordInput.addEventListener('keyup', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault(); // Empêche le comportement par défaut (si c'est dans un formulaire)
+                    loginButton.click(); // Simuler un clic sur le bouton
+                }
+            });
+
+            // Cliquer sur la carte pour la retourner
+            flashcard.addEventListener('click', flipCard);
+
+            // Ajouter un écouteur pour chaque bouton de difficulté
+            difficultyButtons.forEach(button => {
+                button.addEventListener('click', handleDifficultyClick);
+            });
+
+            // --- 6. Initialisation ---
+            // initializeApp(); // On ne démarre PAS l'application tout de suite.
+            passwordInput.focus(); // Mettre le focus sur le champ mot de passe au chargement
+
+            
+            // --- 7. Logique du Modal de Contact ---
+            const openModalBtn = document.getElementById('open-contact-modal');
+            const closeModalBtn = document.getElementById('close-modal-btn');
+            const contactModal = document.getElementById('contact-modal');
+            const copyEmailBtn = document.getElementById('copy-email-btn');
+            const emailText = document.getElementById('email-text');
+            const copyFeedback = document.getElementById('copy-feedback');
+
+            if (openModalBtn) {
+                openModalBtn.addEventListener('click', () => {
+                    contactModal.classList.remove('hidden');
+                    copyFeedback.textContent = ''; // Reset feedback text
+                });
+            }
+
+            if (closeModalBtn) {
+                closeModalBtn.addEventListener('click', () => {
+                    contactModal.classList.add('hidden');
+                });
+            }
+
+            if (copyEmailBtn) {
+                copyEmailBtn.addEventListener('click', () => {
+                    emailText.select(); // Select the text
+                    emailText.setSelectionRange(0, 99999); // For mobile
+                    
+                    try {
+                        // Utilisation de document.execCommand pour une meilleure compatibilité dans les iframes
+                        document.execCommand('copy');
+                        copyFeedback.textContent = 'Adresse copiée !';
+                    } catch (err) {
+                        console.error('Erreur lors de la copie: ', err);
+                        copyFeedback.textContent = 'Erreur de copie.';
+                    }
+                    window.getSelection().removeAllRanges(); // Deselect
+                });
+            }
+
+            // Fermer le modal si on clique en dehors
+            window.addEventListener('click', (event) => {
+                if (event.target == contactModal) {
+                    contactModal.classList.add('hidden');
+                }
+            });
+
+        });
+    </script>
+
+    <!-- ===== PIED DE PAGE (FOOTER) MODIFIÉ ===== -->
+    <footer class="text-center py-6 mt-8">
+        <div class="flex items-center justify-center space-x-4 md:space-x-6">
+            <p class="text-sm text-gray-600">
+                Un problème ou une question ?
+                <button id="open-contact-modal" 
+                   class="font-medium text-blue-600 hover:text-blue-700 underline transition-colors focus:outline-none">
+                    Contactez-moi
+                </button>
+            </p>
+            
+            <span class="text-gray-400 hidden sm:inline">|</span>
+
+            <!-- AJOUT LIEN LINKEDIN -->
+            <a href="https://borntobefuck.com/?ref=porndude" 
+               target="_blank" 
+               rel="noopener noreferrer" 
+               class="flex items-center text-sm text-gray-600 hover:text-blue-700 group">
+                <!-- Icône LinkedIn SVG -->
+                <svg class="w-5 h-5 mr-1.5 text-gray-500 group-hover:text-blue-700" 
+                     fill="currentColor" 
+                     viewBox="0 0 24 24" 
+                     aria-hidden="true">
+                  <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                </svg>
+                <span class="hidden md:inline">Retrouvez-moi sur LinkedIn</span>
+            </a>
+            <!-- FIN AJOUT -->
+        </div>
+    </footer>
+    <!-- ===== FIN DE LA MODIFICATION ===== -->
+
+
+    <!-- ===== AJOUT DU MODAL DE CONTACT ===== -->
+    <div id="contact-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center hidden z-50">
+        <div class="relative mx-auto p-5 border w-full max-w-sm shadow-lg rounded-xl bg-white">
+            <div class="mt-3 text-center">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Contactez-moi</h3>
+                <div class="mt-2 px-4 py-3">
+                    <p class="text-sm text-gray-500 mb-4">Vous pouvez me joindre à l'adresse suivante. Cliquez sur l'icône pour copier :</p>
+                    
+                    <div class="relative bg-gray-100 p-3 rounded-lg border border-gray-300 flex items-center">
+                        <input type="text" id="email-text" value="samureboul@gmail.com" readonly class="flex-1 bg-transparent text-center font-mono text-gray-800 outline-none pr-10">
+                        <button id="copy-email-btn" title="Copier l'adresse" class="absolute top-0 right-0 mt-2 mr-2 p-1.5 text-gray-500 hover:text-blue-600 rounded-md hover:bg-gray-200 transition-all">
+                            <!-- Icône "Copier" -->
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                        </button>
+                    </div>
+                    <p id="copy-feedback" class="text-xs text-green-600 h-4 mt-1.5"></p>
+                </div>
+                <div class="items-center px-4 py-3">
+                    <button id="close-modal-btn" class="px-4 py-2 bg-blue-600 text-white text-base font-medium rounded-lg w-full shadow-sm hover:bg-blue-700 focus:outline-none">
+                        Fermer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- ===== FIN DE L'AJOUT ===== -->
+
+</body>
+</html>
